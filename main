@@ -423,6 +423,7 @@ main.Position = UDim2.new(0.5, -380, 0.5, -235)
 main.BackgroundColor3 = C.bg
 main.Visible = false
 main.BorderSizePixel = 0
+main.Active = true -- Garante que cliques não passem pela UI
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 
 local mainStroke = Instance.new("UIStroke", main)
@@ -437,6 +438,7 @@ shadow.BackgroundColor3 = Color3.new(0,0,0)
 shadow.BackgroundTransparency = 0.7
 shadow.Visible = false
 shadow.ZIndex = 0
+shadow.Active = false -- Sombra não deve bloquear nada
 Instance.new("UICorner", shadow).CornerRadius = UDim.new(0,12)
 
 -- TOPBAR
@@ -444,6 +446,7 @@ local topbar = Instance.new("Frame", main)
 topbar.Size = UDim2.new(1,0,0,34)
 topbar.BackgroundColor3 = C.topbar
 topbar.BorderSizePixel = 0
+topbar.ZIndex = 2
 Instance.new("UICorner", topbar).CornerRadius = UDim.new(0,12)
 
 local title = Instance.new("TextLabel", topbar)
@@ -477,6 +480,7 @@ local SideButtons = Instance.new("Frame", sidebar)
 SideButtons.Size = UDim2.new(1, 0, 1, -120)
 SideButtons.Position = UDim2.new(0, 0, 0, 120)
 SideButtons.BackgroundTransparency = 1
+SideButtons.Active = false -- Não deve bloquear cliques nos botões internos
 
 local sideLayout = Instance.new("UIListLayout", SideButtons)
 sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -577,6 +581,8 @@ local function newPanel(name)
     p.Parent           = ContentArea
     p.CanvasSize       = UDim2.new(0, 0, 0, 0)
     p.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    p.Selectable       = false
+    p.Active           = true -- Ativado para permitir scroll, mas sem bloquear cliques nos filhos
     
     local layout = Instance.new("UIListLayout", p)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -594,12 +600,13 @@ end
 
 -- Helpers de Widget (Estilo Switch com Descrição - Igual à Imagem)
 local allToggles = {}
-local function makeRow(parent, label, desc, flag)
+local function makeRow(parent, label, desc, flag, callback)
     local row = Instance.new('Frame')
-    row.Size             = UDim2.new(1, 0, 0, 56) -- Altura fixa para o item
+    row.Size             = UDim2.new(1, 0, 0, 56)
     row.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
     row.BorderSizePixel  = 0
     row.Parent           = parent
+    row.Active           = false -- Frame não deve bloquear o botão interno
     Instance.new('UICorner', row).CornerRadius = UDim.new(0, 8)
 
     local stroke = Instance.new("UIStroke", row)
@@ -617,6 +624,7 @@ local function makeRow(parent, label, desc, flag)
     lbl.TextSize               = 15
     lbl.Font                   = Enum.Font.GothamBold
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    lbl.Active                 = false
     lbl.Parent                 = row
 
     -- Descrição (Subtitle)
@@ -629,6 +637,7 @@ local function makeRow(parent, label, desc, flag)
     sub.TextSize               = 12
     sub.Font                   = Enum.Font.Gotham
     sub.TextXAlignment         = Enum.TextXAlignment.Left
+    sub.Active                 = false
     sub.Parent                 = row
 
     -- Switch (Pílula moderna)
@@ -637,6 +646,7 @@ local function makeRow(parent, label, desc, flag)
     switchBg.Position         = UDim2.new(1, -56, 0.5, -11)
     switchBg.BackgroundColor3 = C.btnOff
     switchBg.BorderSizePixel  = 0
+    switchBg.Active           = false
     switchBg.Parent           = row
     Instance.new('UICorner', switchBg).CornerRadius = UDim.new(1, 0)
 
@@ -645,6 +655,7 @@ local function makeRow(parent, label, desc, flag)
     knob.Position         = UDim2.new(0, 3, 0.5, -8)
     knob.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
     knob.BorderSizePixel  = 0
+    knob.Active           = false
     knob.Parent           = switchBg
     Instance.new('UICorner', knob).CornerRadius = UDim.new(1, 0)
 
@@ -667,6 +678,7 @@ local function makeRow(parent, label, desc, flag)
     btn.Size                   = UDim2.new(1, 0, 1, 0)
     btn.BackgroundTransparency = 1
     btn.Text                   = ''
+    btn.ZIndex                 = 5 -- Botão por cima de tudo no frame
     btn.Parent                 = row
 
     btn.MouseButton1Click:Connect(function()
@@ -674,6 +686,7 @@ local function makeRow(parent, label, desc, flag)
         for _, func in ipairs(allToggles[flag]) do
             pcall(func)
         end
+        if callback then pcall(callback, _G[flag]) end
     end)
 
     return row
@@ -688,6 +701,7 @@ local function makeInfoLabel(parent, txt)
     lbl.TextSize               = 13
     lbl.Font                   = Enum.Font.Gotham
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    lbl.Active                 = false
     lbl.Parent                 = parent
     return lbl
 end
@@ -695,21 +709,21 @@ end
 -- ══ PAINEL: FARM ══
 local PFarm = newPanel('Farm')
 
-local FarmBtn = Instance.new('TextButton')
-FarmBtn.Size             = UDim2.new(1, 0, 0, 44)
-FarmBtn.BackgroundColor3 = Color3.fromRGB(35, 160, 70)
-FarmBtn.Text             = '▶   Iniciar Auto Farm'
-FarmBtn.TextColor3       = Color3.fromRGB(255, 255, 255)
-FarmBtn.TextSize         = 16
-FarmBtn.Font             = Enum.Font.GothamBold
-FarmBtn.BorderSizePixel  = 0
-FarmBtn.Parent           = PFarm
-Instance.new('UICorner', FarmBtn).CornerRadius = UDim.new(0, 8)
-
-local farmStroke = Instance.new('UIStroke', FarmBtn)
-farmStroke.Color     = Color3.fromRGB(80, 255, 140)
-farmStroke.Thickness = 1.5
-farmStroke.Transparency = 0.4
+-- Novo Toggle de Auto Farm (Substituindo o botão antigo)
+makeRow(PFarm, 'Auto Farm Principal', 'Ativa o sistema de farm automático', 'AutoFarm', function(state)
+    if state then
+        _G.AutoClick = true
+        _G.FastAttack = true
+        for _, flag in ipairs({"AutoClick", "FastAttack"}) do
+            if allToggles[flag] then
+                for _, func in ipairs(allToggles[flag]) do pcall(func) end
+            end
+        end
+        task.spawn(farmLoop)
+    else
+        stopEverything()
+    end
+end)
 
 makeRow(PFarm, 'Auto Quest',    'Completa missões automaticamente', 'AutoQuest')
 makeRow(PFarm, 'Fast Attack',   'Aumenta a velocidade de ataque',   'FastAttack')
@@ -719,28 +733,6 @@ local farmInfoLvl = makeInfoLabel(PFarm, '📊 Level: --')
 local farmInfoMob = makeInfoLabel(PFarm, '⚔  Mob: --')
 local farmInfoSea = makeInfoLabel(PFarm, '🌊 Sea: --')
 local farmInfoSts = makeInfoLabel(PFarm, '⚙  Status: Parado')
-
-FarmBtn.MouseButton1Click:Connect(function()
-    _G.AutoFarm = not _G.AutoFarm
-    if _G.AutoFarm then
-        _G.AutoClick = true
-        _G.FastAttack = true
-        for _, flag in ipairs({"AutoClick", "FastAttack"}) do
-            if allToggles[flag] then
-                for _, func in ipairs(allToggles[flag]) do pcall(func) end
-            end
-        end
-        FarmBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        FarmBtn.Text             = '⏹   Parar Auto Farm'
-        farmStroke.Color         = Color3.fromRGB(255, 100, 100)
-        task.spawn(farmLoop)
-    else
-        FarmBtn.BackgroundColor3 = Color3.fromRGB(35, 160, 70)
-        FarmBtn.Text             = '▶   Iniciar Auto Farm'
-        farmStroke.Color         = Color3.fromRGB(80, 255, 140)
-        stopEverything()
-    end
-end)
 
 -- ══ PAINEL: COMBAT ══
 local PCombat = newPanel('Combat')
