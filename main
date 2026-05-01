@@ -1,0 +1,833 @@
+
+-- ╔══════════════════════════════════════════════╗
+-- ║          ABACATUDO HUB  v3.0                 ║
+-- ║   Interface Painel Lateral | Auto Farm       ║
+-- ╚══════════════════════════════════════════════╝
+
+-- ══ SERVIÇOS ══
+local Players      = game:GetService('Players')
+local RS           = game:GetService('ReplicatedStorage')
+local TweenService = game:GetService('TweenService')
+local RunService   = game:GetService('RunService')
+local VIM          = game:GetService('VirtualInputManager')
+local VU           = game:GetService('VirtualUser')
+
+local LP     = Players.LocalPlayer
+local Char   = LP.Character or LP.CharacterAdded:Wait()
+local HRP    = Char:WaitForChild('HumanoidRootPart')
+local Hum    = Char:WaitForChild('Humanoid')
+local CommF_ = RS:WaitForChild('Remotes'):WaitForChild('CommF_')
+
+-- ══ FLAGS ══
+_G.AutoFarm   = false
+_G.AutoCombat = false
+_G.AutoClick  = false
+_G.FastAttack = false
+_G.AutoQuest  = true -- Inicia ativado conforme a imagem do usuário
+
+-- ══════════════════════════════════════
+--  DADOS DE QUEST
+-- ══════════════════════════════════════
+local QuestData = {
+    -- SEA 1
+    {min=1,   max=9,   quest='BanditQuest1',   qlvl=1, mob='Bandit',              qcf=CFrame.new(1059.37,15.45,1550.42),    mcf=CFrame.new(1045.96,27.0,1560.82),     ent=nil},
+    {min=10,  max=14,  quest='JungleQuest',    qlvl=1, mob='Monkey',              qcf=CFrame.new(-1598.09,35.55,153.38),    mcf=CFrame.new(-1448.52,67.85,11.47),     ent=nil},
+    {min=15,  max=29,  quest='JungleQuest',    qlvl=2, mob='Gorilla',             qcf=CFrame.new(-1598.09,35.55,153.38),    mcf=CFrame.new(-1129.88,40.46,-525.42),   ent=nil},
+    {min=30,  max=39,  quest='BuggyQuest1',    qlvl=1, mob='Pirate',              qcf=CFrame.new(-1141.07,4.10,3831.55),    mcf=CFrame.new(-1103.51,13.75,3896.09),   ent=nil},
+    {min=40,  max=59,  quest='BuggyQuest1',    qlvl=2, mob='Brute',               qcf=CFrame.new(-1141.07,4.10,3831.55),    mcf=CFrame.new(-1140.08,14.81,4322.92),   ent=nil},
+    {min=60,  max=74,  quest='DesertQuest',    qlvl=1, mob='Desert Bandit',       qcf=CFrame.new(894.49,5.14,4392.43),      mcf=CFrame.new(924.80,6.45,4481.59),      ent=nil},
+    {min=75,  max=89,  quest='DesertQuest',    qlvl=2, mob='Desert Officer',      qcf=CFrame.new(894.49,5.14,4392.43),      mcf=CFrame.new(1608.28,8.61,4371.01),     ent=nil},
+    {min=90,  max=99,  quest='SnowQuest',      qlvl=1, mob='Snow Bandit',         qcf=CFrame.new(1389.74,88.15,-1298.91),   mcf=CFrame.new(1354.35,87.27,-1393.95),   ent=nil},
+    {min=100, max=119, quest='SnowQuest',      qlvl=2, mob='Snowman',             qcf=CFrame.new(1389.74,88.15,-1298.91),   mcf=CFrame.new(1201.64,144.58,-1550.07),  ent=nil},
+    {min=120, max=149, quest='MarineQuest2',   qlvl=1, mob='Chief Petty Officer', qcf=CFrame.new(-5039.59,27.35,4324.68),   mcf=CFrame.new(-4881.23,22.65,4273.75),   ent=nil},
+    {min=150, max=174, quest='SkyQuest',       qlvl=1, mob='Sky Bandit',          qcf=CFrame.new(-4839.53,716.37,-2619.44), mcf=CFrame.new(-4953.21,295.74,-2899.23), ent=nil},
+    {min=175, max=189, quest='SkyQuest',       qlvl=2, mob='Dark Master',         qcf=CFrame.new(-4839.53,716.37,-2619.44), mcf=CFrame.new(-5259.84,391.40,-2229.04), ent=nil},
+    {min=190, max=209, quest='PrisonerQuest',  qlvl=1, mob='Prisoner',            qcf=CFrame.new(5308.93,1.66,475.12),      mcf=CFrame.new(5098.97,-0.32,474.24),     ent=nil},
+    {min=210, max=249, quest='PrisonerQuest',  qlvl=2, mob='Dangerous Prisoner',  qcf=CFrame.new(5308.93,1.66,475.12),      mcf=CFrame.new(5654.56,15.63,866.30),     ent=nil},
+    {min=250, max=274, quest='ColosseumQuest', qlvl=1, mob='Toga Warrior',        qcf=CFrame.new(-1580.05,6.35,-2986.48),   mcf=CFrame.new(-1820.21,51.68,-2740.67),  ent=nil},
+    {min=275, max=299, quest='ColosseumQuest', qlvl=2, mob='Gladiator',           qcf=CFrame.new(-1580.05,6.35,-2986.48),   mcf=CFrame.new(-1292.84,56.38,-3339.03),  ent=nil},
+    {min=300, max=324, quest='MagmaQuest',     qlvl=1, mob='Military Soldier',    qcf=CFrame.new(-5313.37,10.95,8515.29),   mcf=CFrame.new(-5411.16,11.08,8454.29),   ent=nil},
+    {min=325, max=374, quest='MagmaQuest',     qlvl=2, mob='Military Spy',        qcf=CFrame.new(-5313.37,10.95,8515.29),   mcf=CFrame.new(-5802.87,86.26,8828.86),   ent=nil},
+    {min=375, max=399, quest='FishmanQuest',   qlvl=1, mob='Fishman Warrior',     qcf=CFrame.new(61122.65,18.50,1569.40),   mcf=CFrame.new(60878.30,18.48,1543.76),   ent=Vector3.new(61163.85,11.68,1819.78)},
+    {min=400, max=449, quest='FishmanQuest',   qlvl=2, mob='Fishman Commando',    qcf=CFrame.new(61122.65,18.50,1569.40),   mcf=CFrame.new(61922.63,18.48,1493.93),   ent=Vector3.new(61163.85,11.68,1819.78)},
+    {min=450, max=474, quest='SkyExp1Quest',   qlvl=1, mob="God's Guard",         qcf=CFrame.new(-4721.89,843.87,-1949.97), mcf=CFrame.new(-4710.04,845.28,-1927.31), ent=Vector3.new(-4607.82,872.54,-1667.56)},
+    {min=475, max=524, quest='SkyExp1Quest',   qlvl=2, mob='Shanda',              qcf=CFrame.new(-7859.10,5544.19,-381.48), mcf=CFrame.new(-7678.49,5566.40,-497.22), ent=Vector3.new(-7894.62,5547.14,-380.29)},
+    {min=525, max=549, quest='SkyExp2Quest',   qlvl=1, mob='Royal Squad',         qcf=CFrame.new(-7906.82,5634.66,-1411.99),mcf=CFrame.new(-7624.25,5658.13,-1467.35),ent=nil},
+    {min=550, max=624, quest='SkyExp2Quest',   qlvl=2, mob='Royal Soldier',       qcf=CFrame.new(-7906.82,5634.66,-1411.99),mcf=CFrame.new(-7836.75,5645.66,-1790.62),ent=nil},
+    {min=625, max=649, quest='FountainQuest',  qlvl=1, mob='Galley Pirate',       qcf=CFrame.new(5259.82,37.35,4050.03),    mcf=CFrame.new(5551.02,78.90,3930.41),    ent=nil},
+    {min=650, max=699, quest='FountainQuest',  qlvl=2, mob='Galley Captain',      qcf=CFrame.new(5259.82,37.35,4050.03),    mcf=CFrame.new(5441.95,42.50,4950.09),    ent=nil},
+    -- SEA 2
+    {min=700, max=724, quest='RaiderQuest',    qlvl=1, mob='Raider',              qcf=CFrame.new(-1507.47,35.55,1388.27),   mcf=CFrame.new(-1507.47,35.55,1388.27),   ent=nil},
+    {min=725, max=774, quest='MercenaryQuest', qlvl=1, mob='Mercenary',           qcf=CFrame.new(-986.77,72.88,1088.45),    mcf=CFrame.new(-986.77,72.88,1088.45),    ent=nil},
+    {min=775, max=799, quest='SwanQuest',      qlvl=1, mob='Swan Pirate',         qcf=CFrame.new(318.93,15.55,1507.47),     mcf=CFrame.new(318.93,15.55,1507.47),     ent=nil},
+    {min=800, max=874, quest='FactoryQuest',   qlvl=1, mob='Factory Staff',       qcf=CFrame.new(-105.89,72.81,-670.25),    mcf=CFrame.new(-105.89,72.81,-670.25),    ent=nil},
+    {min=875, max=949, quest='MarineCapQuest', qlvl=1, mob='Marine Captain',      qcf=CFrame.new(1508.47,15.55,-1507.47),   mcf=CFrame.new(1508.47,15.55,-1507.47),   ent=nil},
+    {min=950, max=999, quest='VampireQuest',   qlvl=1, mob='Vampire',             qcf=CFrame.new(-6132.39,9.01,-1466.17),   mcf=CFrame.new(-6132.39,9.01,-1466.17),   ent=nil},
+    -- SEA 3 (Ajustado para os mobs da imagem: Baking Staff)
+    {min=1000, max=2274, quest='CandyQuest1',  qlvl=1, mob='Baking Staff',        qcf=CFrame.new(-948.13,16.14,-12102.57),  mcf=CFrame.new(-1141.05,14.07,-12316.53), ent=nil},
+    {min=2275, max=2500, quest='CandyQuest1',  qlvl=2, mob='Cake Guard',          qcf=CFrame.new(-948.13,16.14,-12102.57),  mcf=CFrame.new(-1250.56,15.11,-12600.22), ent=nil},
+}
+
+-- ══════════════════════════════════════
+--  UTILITÁRIOS / LÓGICA DE FARM
+-- ══════════════════════════════════════
+local statusText = 'Parado'
+
+local function getLevel()
+    return LP.Data.Level.Value
+end
+
+local function isAlive()
+    return Char and Hum and Hum.Health > 0
+end
+
+local function waitRespawn()
+    statusText = 'Aguardando respawn...'
+    LP.CharacterAdded:Wait()
+    task.wait(3)
+    Char = LP.Character
+    HRP  = Char:WaitForChild('HumanoidRootPart')
+    Hum  = Char:WaitForChild('Humanoid')
+end
+
+local function getQuestEntry()
+    local lvl = getLevel()
+    for _, q in ipairs(QuestData) do
+        if lvl >= q.min and lvl <= q.max then return q end
+    end
+    return QuestData[#QuestData]
+end
+
+-- Verifica quest ativa de forma robusta
+local function hasQuest()
+    local ok, res = pcall(function()
+        -- Verifica via dados do jogador
+        local qv = LP:FindFirstChild('Data') and LP.Data:FindFirstChild('QuestV2')
+        if qv and qv.Value ~= '' then return true end
+        
+        -- Verifica via GUI (mais confiável em alguns servidores)
+        local mainGui = LP.PlayerGui:FindFirstChild('Main')
+        local questGui = mainGui and mainGui:FindFirstChild('Quest')
+        if questGui and questGui.Visible then return true end
+        
+        return false
+    end)
+    return ok and res == true
+end
+
+-- Equipar ferramenta (arma)
+local function equipTool()
+    if not isAlive() then return end
+    if Char:FindFirstChildOfClass('Tool') then return end
+    
+    -- Procura qualquer ferramenta no Backpack
+    for _, tool in ipairs(LP.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            Hum:EquipTool(tool)
+            return
+        end
+    end
+end
+
+-- Função para restaurar o personagem ao normal
+local function stopEverything()
+    statusText = 'Parado'
+    pcall(function()
+        -- Remove o BodyVelocity que mantém o personagem voando
+        if HRP:FindFirstChild("AbacatudoFly") then
+            HRP.AbacatudoFly:Destroy()
+        end
+        -- Restaura colisões
+        for _, part in ipairs(Char:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end)
+end
+
+-- Teleporte direto (com estabilização de velocidade para evitar detecção)
+local function tp(cf)
+    if HRP then
+        HRP.CFrame = cf
+        HRP.Velocity = Vector3.new(0, 0, 0)
+        
+        -- Garante que o personagem não caia (estilo Fly/Float)
+        if _G.AutoFarm or _G.AutoCombat then
+            local bv = HRP:FindFirstChild("AbacatudoFly")
+            if not bv then
+                bv = Instance.new("BodyVelocity")
+                bv.Name = "AbacatudoFly"
+                bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                bv.Velocity = Vector3.new(0, 0, 0)
+                bv.Parent = HRP
+            end
+        end
+    end
+end
+
+-- Noclip para evitar bugs
+task.spawn(function()
+    while true do
+        task.wait()
+        if _G.AutoFarm or _G.AutoCombat then
+            pcall(function()
+                for _, part in ipairs(Char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Aceita quest: vai até o NPC, espera carregar, invoca servidor
+local function doAcceptQuest(q)
+    if not _G.AutoQuest then return end
+    if hasQuest() then return end
+    
+    isAcceptingQuest = true
+    statusText = 'Pegando missão: ' .. q.mob
+    
+    -- Tenta pegar a missão por alguns segundos
+    local startTime = tick()
+    while tick() - startTime < 5 and not hasQuest() and _G.AutoQuest do
+        tp(q.qcf)
+        pcall(function()
+            CommF_:InvokeServer('StartQuest', q.quest, q.qlvl)
+        end)
+        task.wait(0.5)
+    end
+    isAcceptingQuest = false
+end
+
+-- Encontra mob mais próximo e o agrupa se possível
+local function findMob(name)
+    local best, bestDist = nil, math.huge
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    
+    for _, obj in ipairs(enemies:GetDescendants()) do
+        if obj.Name == name and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChildOfClass("Humanoid") and obj:FindFirstChildOfClass("Humanoid").Health > 0 then
+            local d = (obj.HumanoidRootPart.Position - HRP.Position).Magnitude
+            if d < bestDist then
+                best, bestDist = obj, d
+            end
+        end
+    end
+    return best
+end
+
+-- Usa habilidades Z X C V
+local function useSkills()
+    for _, k in ipairs({Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}) do
+        pcall(function()
+            VIM:SendKeyEvent(true,  k, false, game)
+            task.wait(0.01)
+            VIM:SendKeyEvent(false, k, false, game)
+        end)
+    end
+end
+
+-- Fast Attack / Auto Click Logic
+local isAcceptingQuest = false
+task.spawn(function()
+    while true do
+        if (_G.AutoFarm or _G.AutoCombat) and (_G.FastAttack or _G.AutoClick) and not isAcceptingQuest then
+            -- Verifica se há algum mob próximo antes de clicar
+            local target = nil
+            local q = getQuestEntry()
+            if q then target = findMob(q.mob) end
+            
+            if target and (target.HumanoidRootPart.Position - HRP.Position).Magnitude < 50 then
+                pcall(function()
+                    local tool = Char:FindFirstChildOfClass("Tool")
+                    if tool then
+                        tool:Activate()
+                    end
+                    -- VirtualInputManager agora com cliques muito mais rápidos
+                    VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                end)
+            end
+            
+            if _G.FastAttack then
+                task.wait() -- Delay mínimo absoluto do Roblox (Fastest possible)
+            else
+                task.wait(0.1)
+            end
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
+-- Ataca mob: fica EM CIMA e usa skills/click
+local function attackMob(mob)
+    if not mob then return end
+    local mhrp = mob:FindFirstChild('HumanoidRootPart')
+    if not mhrp then return end
+    
+    equipTool()
+    
+    -- Ajustado para 8 studs de altura (altura ideal para hitboxes de Blox Fruits)
+    tp(CFrame.new(mhrp.Position + Vector3.new(0, 8, 0)))
+    
+    if _G.AutoCombat then useSkills() end
+end
+
+-- Transição Sea 2
+local function checkSea()
+    if getLevel() >= 700 and game.PlaceId ~= 4442272183 then
+        statusText = 'Indo para Sea 2...'
+        pcall(function()
+            CommF_:InvokeServer('requestEntrance', Vector3.new(-1507.47, 35.55, 1388.27))
+        end)
+        task.wait(5)
+    end
+end
+
+-- ══ LOOP PRINCIPAL ══
+local function farmLoop()
+    while _G.AutoFarm do
+        -- Delay estratégico para permitir que a UI respire e não congele
+        RunService.Heartbeat:Wait()
+        
+        if not isAlive() then waitRespawn() continue end
+
+        checkSea()
+
+        local q = getQuestEntry()
+
+        -- Entrada de ilha especial
+        if q.ent then
+            local dist = (q.qcf.Position - HRP.Position).Magnitude
+            if dist > 3000 then
+                statusText = 'Teleportando para ilha...'
+                pcall(function() CommF_:InvokeServer('requestEntrance', q.ent) end)
+                task.wait(2)
+            end
+        end
+
+        -- Pega quest se não tiver
+        if _G.AutoQuest and not hasQuest() then
+            doAcceptQuest(q)
+        end
+
+        -- Mata mobs enquanto tiver quest (ou se autoquest estiver off)
+        local mob = findMob(q.mob)
+        if mob then
+            statusText = 'Matando: ' .. q.mob
+            attackMob(mob)
+        else
+            -- Mob não encontrado: vai para a área base
+            statusText = 'Procurando: ' .. q.mob
+            tp(q.mcf * CFrame.new(0, 20, 0))
+            task.wait(0.5)
+        end
+    end
+    stopEverything()
+end
+
+-- Auto Combat independente (sem farm ativo)
+task.spawn(function()
+    while true do
+        task.wait(0.12)
+        if _G.AutoCombat and not _G.AutoFarm and isAlive() then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA('Model') and obj ~= Char
+                    and obj:FindFirstChildOfClass('Humanoid')
+                    and obj:FindFirstChildOfClass('Humanoid').Health > 0
+                    and obj:FindFirstChild('HumanoidRootPart') then
+                    if (obj.HumanoidRootPart.Position - HRP.Position).Magnitude < 60 then
+                        attackMob(obj)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)
+
+LP.CharacterAdded:Connect(function(c)
+    Char = c
+    HRP  = c:WaitForChild('HumanoidRootPart')
+    Hum  = c:WaitForChild('Humanoid')
+end)
+
+stopEverything()
+
+-- ══════════════════════════════════════
+--  INTERFACE — NOVA ESTRUTURA (RedzEmptyUI)
+-- ══════════════════════════════════════
+local UserInputService = game:GetService("UserInputService")
+
+local old = LP.PlayerGui:FindFirstChild("RedzEmptyUI") or LP.PlayerGui:FindFirstChild("AbacatudoHub")
+if old then old:Destroy() end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "RedzEmptyUI"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = LP:WaitForChild("PlayerGui")
+
+-- Cores do tema (Mantendo as cores originais para os widgets)
+local C = {
+    bg       = Color3.fromRGB(18, 18, 20),
+    sidebar  = Color3.fromRGB(20, 20, 22),
+    content  = Color3.fromRGB(16, 16, 18),
+    topbar   = Color3.fromRGB(22, 22, 25),
+    accent   = Color3.fromRGB(80, 200, 255),
+    accent2  = Color3.fromRGB(50, 255, 120),
+    btnOff   = Color3.fromRGB(30, 30, 50),
+    btnOn    = Color3.fromRGB(20, 160, 80),
+    text     = Color3.fromRGB(235, 235, 235),
+    textDim  = Color3.fromRGB(130, 130, 160),
+    divider  = Color3.fromRGB(45, 45, 50),
+    selected = Color3.fromRGB(30, 30, 55),
+}
+
+-- BOTÃO BOLINHA (abrir)
+local openBtn = Instance.new("TextButton")
+openBtn.Parent = gui
+openBtn.Size = UDim2.new(0, 50, 0, 50)
+openBtn.Position = UDim2.new(0, 20, 0.5, -25)
+openBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+openBtn.Text = "☰"
+openBtn.TextColor3 = Color3.fromRGB(255,255,255)
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextSize = 18
+openBtn.BorderSizePixel = 0
+openBtn.AutoButtonColor = false
+Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
+
+local stroke = Instance.new("UIStroke")
+stroke.Parent = openBtn
+stroke.Color = Color3.fromRGB(70,70,80)
+stroke.Thickness = 1.5
+
+-- sombra leve
+local shadowBtn = Instance.new("Frame")
+shadowBtn.Parent = gui
+shadowBtn.Size = openBtn.Size
+shadowBtn.Position = UDim2.new(openBtn.Position.X.Scale, openBtn.Position.X.Offset+4, openBtn.Position.Y.Scale, openBtn.Position.Y.Offset+4)
+shadowBtn.BackgroundColor3 = Color3.new(0,0,0)
+shadowBtn.BackgroundTransparency = 0.7
+shadowBtn.ZIndex = 0
+Instance.new("UICorner", shadowBtn).CornerRadius = UDim.new(1,0)
+
+-- MAIN UI
+local main = Instance.new("Frame")
+main.Parent = gui
+main.Size = UDim2.new(0, 760, 0, 470)
+main.Position = UDim2.new(0.5, -380, 0.5, -235)
+main.BackgroundColor3 = C.bg
+main.Visible = false
+main.BorderSizePixel = 0
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+
+local mainStroke = Instance.new("UIStroke", main)
+mainStroke.Color = C.divider
+
+-- sombra janela
+local shadow = Instance.new("Frame")
+shadow.Parent = gui
+shadow.Size = main.Size
+shadow.Position = UDim2.new(0.5, -374, 0.5, -229)
+shadow.BackgroundColor3 = Color3.new(0,0,0)
+shadow.BackgroundTransparency = 0.7
+shadow.Visible = false
+shadow.ZIndex = 0
+Instance.new("UICorner", shadow).CornerRadius = UDim.new(0,12)
+
+-- TOPBAR
+local topbar = Instance.new("Frame", main)
+topbar.Size = UDim2.new(1,0,0,34)
+topbar.BackgroundColor3 = C.topbar
+topbar.BorderSizePixel = 0
+Instance.new("UICorner", topbar).CornerRadius = UDim.new(0,12)
+
+local title = Instance.new("TextLabel", topbar)
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0,12,0,0)
+title.Size = UDim2.new(1,-60,1,0)
+title.Font = Enum.Font.GothamBold
+title.Text = "Abacatudo Hub : Blox Fruits"
+title.TextSize = 16
+title.TextColor3 = C.text
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton", topbar)
+closeBtn.Size = UDim2.new(0,34,0,34)
+closeBtn.Position = UDim2.new(1,-34,0,0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "×"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 20
+closeBtn.TextColor3 = C.text
+
+-- SIDEBAR
+local sidebar = Instance.new("Frame", main)
+sidebar.Position = UDim2.new(0,0,0,34)
+sidebar.Size = UDim2.new(0,160,1,-34)
+sidebar.BackgroundColor3 = C.sidebar
+sidebar.BorderSizePixel = 0
+
+-- Logo na sidebar (Reutilizada)
+local SideLogo = Instance.new("ImageLabel")
+SideLogo.Size                   = UDim2.new(0, 70, 0, 84)
+SideLogo.Position               = UDim2.new(0.5, -35, 0, 8)
+SideLogo.BackgroundTransparency = 1
+SideLogo.Image                  = 'rbxassetid://112310618760963'
+SideLogo.ScaleType              = Enum.ScaleType.Fit
+SideLogo.Parent                 = sidebar
+
+local SideTitle = Instance.new('TextLabel')
+SideTitle.Size                   = UDim2.new(1, 0, 0, 18)
+SideTitle.Position               = UDim2.new(0, 0, 0, 96)
+SideTitle.BackgroundTransparency = 1
+SideTitle.Text                   = 'ABACATUDO HUB'
+SideTitle.TextColor3             = C.accent2
+SideTitle.TextScaled             = true
+SideTitle.Font                   = Enum.Font.GothamBold
+SideTitle.Parent                 = sidebar
+
+-- CONTENT
+local ContentArea = Instance.new("Frame", main)
+ContentArea.Position = UDim2.new(0,160,0,34)
+ContentArea.Size = UDim2.new(1,-160,1,-34)
+ContentArea.BackgroundColor3 = C.content
+ContentArea.BorderSizePixel = 0
+
+-- LÓGICA DE ABAS
+local menuItems = {'Farm', 'Combat', 'Configurações', 'Status'}
+local menuBtns  = {}
+local activeTab = 'Farm'
+
+local function makeSideBtn(name, posY)
+    local btn = Instance.new('TextButton')
+    btn.Size             = UDim2.new(1, -10, 0, 34)
+    btn.Position         = UDim2.new(0, 5, 0, posY)
+    btn.BackgroundColor3 = C.sidebar
+    btn.Text             = name
+    btn.TextColor3       = C.textDim
+    btn.TextScaled       = true
+    btn.Font             = Enum.Font.Gotham
+    btn.BorderSizePixel  = 0
+    btn.Parent           = sidebar
+    Instance.new('UICorner', btn).CornerRadius = UDim.new(0, 6)
+
+    local bar = Instance.new('Frame')
+    bar.Size             = UDim2.new(0, 3, 0.7, 0)
+    bar.Position         = UDim2.new(0, 0, 0.15, 0)
+    bar.BackgroundColor3 = C.accent
+    bar.BorderSizePixel  = 0
+    bar.Visible          = false
+    bar.Parent           = btn
+    Instance.new('UICorner', bar).CornerRadius = UDim.new(0, 2)
+
+    return btn, bar
+end
+
+local sideY = 126
+for _, name in ipairs(menuItems) do
+    local btn, bar = makeSideBtn(name, sideY)
+    menuBtns[name] = {btn=btn, bar=bar}
+    sideY = sideY + 38
+end
+
+-- Título da aba ativa
+local TabTitle = Instance.new('TextLabel')
+TabTitle.Size                   = UDim2.new(1, -20, 0, 32)
+TabTitle.Position               = UDim2.new(0, 14, 0, 6)
+TabTitle.BackgroundTransparency = 1
+TabTitle.Text                   = 'Farm'
+TabTitle.TextColor3             = C.accent
+TabTitle.TextScaled             = true
+TabTitle.Font                   = Enum.Font.GothamBold
+TabTitle.TextXAlignment         = Enum.TextXAlignment.Left
+TabTitle.Parent                 = ContentArea
+
+local HDiv = Instance.new('Frame')
+HDiv.Size             = UDim2.new(1, -20, 0, 1)
+HDiv.Position         = UDim2.new(0, 10, 0, 40)
+HDiv.BackgroundColor3 = C.divider
+HDiv.BorderSizePixel  = 0
+HDiv.Parent           = ContentArea
+
+-- Painéis
+local Panels = {}
+local function newPanel(name)
+    local p = Instance.new('Frame')
+    p.Name             = name
+    p.Size             = UDim2.new(1, 0, 1, -44)
+    p.Position         = UDim2.new(0, 0, 0, 44)
+    p.BackgroundTransparency = 1
+    p.Visible          = false
+    p.Parent           = ContentArea
+    Panels[name]       = p
+    return p
+end
+
+-- Helpers de Widget (Reutilizados)
+local allToggles = {}
+local function makeRow(parent, posY, label, flag)
+    local row = Instance.new('Frame')
+    row.Size             = UDim2.new(1, -20, 0, 38)
+    row.Position         = UDim2.new(0, 10, 0, posY)
+    row.BackgroundColor3 = C.btnOff
+    row.BorderSizePixel  = 0
+    row.Parent           = parent
+    Instance.new('UICorner', row).CornerRadius = UDim.new(0, 6)
+
+    local lbl = Instance.new('TextLabel')
+    lbl.Size                   = UDim2.new(1, -50, 1, 0)
+    lbl.Position               = UDim2.new(0, 12, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text                   = label
+    lbl.TextColor3             = C.text
+    lbl.TextScaled             = true
+    lbl.Font                   = Enum.Font.GothamBold
+    lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    lbl.Parent                 = row
+
+    local box = Instance.new('Frame')
+    box.Size             = UDim2.new(0, 22, 0, 22)
+    box.Position         = UDim2.new(1, -32, 0.5, -11)
+    box.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    box.BorderSizePixel  = 0
+    box.Parent           = row
+    Instance.new('UICorner', box).CornerRadius = UDim.new(0, 4)
+    local boxStroke = Instance.new('UIStroke', box)
+    boxStroke.Color     = C.accent
+    boxStroke.Thickness = 1.5
+
+    local check = Instance.new('TextLabel')
+    check.Size                   = UDim2.new(1, 0, 1, 0)
+    check.BackgroundTransparency = 1
+    check.Text                   = ''
+    check.TextColor3             = C.accent2
+    check.TextScaled             = true
+    check.Font                   = Enum.Font.GothamBold
+    check.Parent                 = box
+
+    local function updateVisuals()
+        local s = _G[flag]
+        check.Text             = s and '✓' or ''
+        row.BackgroundColor3   = s and Color3.fromRGB(20, 50, 35) or C.btnOff
+        boxStroke.Color        = s and C.accent2 or C.accent
+    end
+
+    if not allToggles[flag] then allToggles[flag] = {} end
+    table.insert(allToggles[flag], updateVisuals)
+    updateVisuals()
+
+    local btn = Instance.new('TextButton')
+    btn.Size                   = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text                   = ''
+    btn.Parent                 = row
+
+    btn.MouseButton1Click:Connect(function()
+        _G[flag] = not _G[flag]
+        for _, func in ipairs(allToggles[flag]) do
+            pcall(func)
+        end
+    end)
+
+    return row
+end
+
+local function makeInfoLabel(parent, posY, txt)
+    local lbl = Instance.new('TextLabel')
+    lbl.Size                   = UDim2.new(1, -20, 0, 26)
+    lbl.Position               = UDim2.new(0, 10, 0, posY)
+    lbl.BackgroundTransparency = 1
+    lbl.Text                   = txt
+    lbl.TextColor3             = C.textDim
+    lbl.TextScaled             = true
+    lbl.Font                   = Enum.Font.Gotham
+    lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    lbl.Parent                 = parent
+    return lbl
+end
+
+-- ══ PAINEL: FARM ══
+local PFarm = newPanel('Farm')
+local FarmBtn = Instance.new('TextButton')
+FarmBtn.Size             = UDim2.new(1, -20, 0, 40)
+FarmBtn.Position         = UDim2.new(0, 10, 0, 10)
+FarmBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 60)
+FarmBtn.Text             = '▶   Iniciar Auto Farm'
+FarmBtn.TextColor3       = Color3.fromRGB(255, 255, 255)
+FarmBtn.TextScaled       = true
+FarmBtn.Font             = Enum.Font.GothamBold
+FarmBtn.BorderSizePixel  = 0
+FarmBtn.Parent           = PFarm
+Instance.new('UICorner', FarmBtn).CornerRadius = UDim.new(0, 7)
+local farmStroke = Instance.new('UIStroke', FarmBtn)
+farmStroke.Color     = C.accent2
+farmStroke.Thickness = 1
+
+makeRow(PFarm, 58,  'Auto Quest',    'AutoQuest')
+makeRow(PFarm, 102, 'Fast Attack',   'FastAttack')
+makeRow(PFarm, 146, 'Auto Click',    'AutoClick')
+
+local farmInfoLvl = makeInfoLabel(PFarm, 192, '📊 Level: --')
+local farmInfoMob = makeInfoLabel(PFarm, 216, '⚔  Mob: --')
+local farmInfoSea = makeInfoLabel(PFarm, 240, '🌊 Sea: --')
+local farmInfoSts = makeInfoLabel(PFarm, 264, '⚙  Status: Parado')
+
+FarmBtn.MouseButton1Click:Connect(function()
+    _G.AutoFarm = not _G.AutoFarm
+    if _G.AutoFarm then
+        _G.AutoClick = true
+        _G.FastAttack = true
+        for _, flag in ipairs({"AutoClick", "FastAttack"}) do
+            if allToggles[flag] then
+                for _, func in ipairs(allToggles[flag]) do pcall(func) end
+            end
+        end
+        FarmBtn.BackgroundColor3 = Color3.fromRGB(160, 35, 35)
+        FarmBtn.Text             = '⏹   Parar Auto Farm'
+        farmStroke.Color         = Color3.fromRGB(255, 80, 80)
+        task.spawn(farmLoop)
+    else
+        FarmBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 60)
+        FarmBtn.Text             = '▶   Iniciar Auto Farm'
+        farmStroke.Color         = C.accent2
+        stopEverything()
+    end
+end)
+
+-- ══ PAINEL: COMBAT ══
+local PCombat = newPanel('Combat')
+makeRow(PCombat, 10,  'Auto Combat (Skills Z X C V)', 'AutoCombat')
+makeRow(PCombat, 54,  'Auto Click em Mobs',           'AutoClick')
+makeRow(PCombat, 98,  'Fast Attack',                  'FastAttack')
+makeInfoLabel(PCombat, 148, '⚠ Auto Combat funciona sozinho ou junto com o Farm.')
+
+-- ══ PAINEL: CONFIGURAÇÕES ══
+local PConfig = newPanel('Configurações')
+local cfgLines = {
+    '🥑 Abacatudo Hub v3.0',
+    '🎮 Blox Fruits — Sea 1 e Sea 2',
+    '⚔  Auto Farm do Lv 1 ao Lv 999',
+    '🌊 Troca automática para Sea 2 no Lv 700',
+    '🗡  Auto Combat com Skills Z X C V',
+    '⚡  Fast Attack reduz delay de ataque',
+}
+for i, line in ipairs(cfgLines) do
+    makeInfoLabel(PConfig, 4 + i * 26, line)
+end
+
+-- ══ PAINEL: STATUS ══
+local PStatus = newPanel('Status')
+local stLvl  = makeInfoLabel(PStatus, 10,  '📊 Level: --')
+local stMob  = makeInfoLabel(PStatus, 36,  '⚔  Mob Atual: --')
+local stSea  = makeInfoLabel(PStatus, 62,  '🌊 Sea: --')
+local stSts  = makeInfoLabel(PStatus, 88,  '⚙  Status: Parado')
+local stFarm = makeInfoLabel(PStatus, 114, '🌿 Auto Farm: OFF')
+local stCbt  = makeInfoLabel(PStatus, 140, '🗡  Auto Combat: OFF')
+local stClk  = makeInfoLabel(PStatus, 166, '🖱  Auto Click: OFF')
+local stFast = makeInfoLabel(PStatus, 192, '⚡  Fast Attack: OFF')
+
+-- ══ TROCA DE ABAS ══
+local function switchTab(name)
+    activeTab = name
+    TabTitle.Text = name
+    for n, p in pairs(Panels) do
+        p.Visible = (n == name)
+    end
+    for n, data in pairs(menuBtns) do
+        local active = (n == name)
+        data.btn.TextColor3       = active and C.accent or C.textDim
+        data.btn.BackgroundColor3 = active and C.selected or C.sidebar
+        data.bar.Visible          = active
+    end
+end
+
+for name, data in pairs(menuBtns) do
+    data.btn.MouseButton1Click:Connect(function()
+        switchTab(name)
+    end)
+end
+
+switchTab('Farm')
+
+-- ABRIR / FECHAR
+openBtn.MouseButton1Click:Connect(function()
+    main.Visible = true
+    shadow.Visible = true
+    openBtn.Visible = false
+    shadowBtn.Visible = false
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    main.Visible = false
+    shadow.Visible = false
+    openBtn.Visible = true
+    shadowBtn.Visible = true
+end)
+
+-- DRAG NA JANELA
+local dragging, dragStart, startPos
+topbar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        shadow.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X + 6,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y + 6
+        )
+    end
+end)
+
+topbar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- ATUALIZAÇÃO DE INFO
+task.spawn(function()
+    while true do
+        task.wait(1)
+        pcall(function()
+            local lvl  = getLevel()
+            local q    = getQuestEntry()
+            local mob  = q and q.mob or '--'
+            local sea  = lvl >= 700 and 'Sea 2' or 'Sea 1'
+            local sts  = _G.AutoFarm and ('Farmando Lv '..lvl) or statusText
+
+            farmInfoLvl.Text = '📊 Level: ' .. lvl
+            farmInfoMob.Text = '⚔  Mob: '   .. mob
+            farmInfoSea.Text = '🌊 Sea: '    .. sea
+            farmInfoSts.Text = '⚙  Status: ' .. sts
+
+            stLvl.Text  = '📊 Level: '       .. lvl
+            stMob.Text  = '⚔  Mob Atual: '   .. mob
+            stSea.Text  = '🌊 Sea: '          .. sea
+            stSts.Text  = '⚙  Status: '       .. sts
+            stFarm.Text = '🌿 Auto Farm: '    .. (_G.AutoFarm   and 'ON ✓' or 'OFF')
+            stCbt.Text  = '🗡  Auto Combat: ' .. (_G.AutoCombat and 'ON ✓' or 'OFF')
+            stClk.Text  = '🖱  Auto Click: '  .. (_G.AutoClick  and 'ON ✓' or 'OFF')
+            stFast.Text = '⚡  Fast Attack: ' .. (_G.FastAttack and 'ON ✓' or 'OFF')
+        end)
+    end
+end)
