@@ -371,20 +371,19 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = LP:WaitForChild("PlayerGui")
 
--- Cores do tema (Mantendo as cores originais para os widgets)
+-- Cores do tema (Estilo Moderno e Escuro)
 local C = {
-    bg       = Color3.fromRGB(18, 18, 20),
+    bg       = Color3.fromRGB(15, 15, 16),
     sidebar  = Color3.fromRGB(20, 20, 22),
-    content  = Color3.fromRGB(16, 16, 18),
-    topbar   = Color3.fromRGB(22, 22, 25),
-    accent   = Color3.fromRGB(80, 200, 255),
+    content  = Color3.fromRGB(12, 12, 13),
+    topbar   = Color3.fromRGB(25, 25, 28),
+    accent   = Color3.fromRGB(75, 100, 255), -- Azul moderno para o Switch
     accent2  = Color3.fromRGB(50, 255, 120),
-    btnOff   = Color3.fromRGB(30, 30, 50),
-    btnOn    = Color3.fromRGB(20, 160, 80),
-    text     = Color3.fromRGB(235, 235, 235),
-    textDim  = Color3.fromRGB(130, 130, 160),
-    divider  = Color3.fromRGB(45, 45, 50),
-    selected = Color3.fromRGB(30, 30, 55),
+    btnOff   = Color3.fromRGB(45, 45, 50),
+    text     = Color3.fromRGB(255, 255, 255),
+    textDim  = Color3.fromRGB(160, 160, 170),
+    divider  = Color3.fromRGB(30, 30, 35),
+    selected = Color3.fromRGB(40, 40, 50),
 }
 
 -- BOTÃO BOLINHA (abrir)
@@ -473,22 +472,33 @@ sidebar.Size = UDim2.new(0,160,1,-34)
 sidebar.BackgroundColor3 = C.sidebar
 sidebar.BorderSizePixel = 0
 
+-- Container para botões da sidebar (com Layout)
+local SideButtons = Instance.new("Frame", sidebar)
+SideButtons.Size = UDim2.new(1, 0, 1, -120)
+SideButtons.Position = UDim2.new(0, 0, 0, 120)
+SideButtons.BackgroundTransparency = 1
+
+local sideLayout = Instance.new("UIListLayout", SideButtons)
+sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sideLayout.Padding = UDim.new(0, 4)
+sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
 -- Logo na sidebar (Reutilizada)
 local SideLogo = Instance.new("ImageLabel")
-SideLogo.Size                   = UDim2.new(0, 70, 0, 84)
-SideLogo.Position               = UDim2.new(0.5, -35, 0, 8)
+SideLogo.Size                   = UDim2.new(0, 64, 0, 76)
+SideLogo.Position               = UDim2.new(0.5, -32, 0, 10)
 SideLogo.BackgroundTransparency = 1
 SideLogo.Image                  = 'rbxassetid://112310618760963'
 SideLogo.ScaleType              = Enum.ScaleType.Fit
 SideLogo.Parent                 = sidebar
 
 local SideTitle = Instance.new('TextLabel')
-SideTitle.Size                   = UDim2.new(1, 0, 0, 18)
-SideTitle.Position               = UDim2.new(0, 0, 0, 96)
+SideTitle.Size                   = UDim2.new(1, 0, 0, 20)
+SideTitle.Position               = UDim2.new(0, 0, 0, 90)
 SideTitle.BackgroundTransparency = 1
 SideTitle.Text                   = 'ABACATUDO HUB'
 SideTitle.TextColor3             = C.accent2
-SideTitle.TextScaled             = true
+SideTitle.TextSize               = 14
 SideTitle.Font                   = Enum.Font.GothamBold
 SideTitle.Parent                 = sidebar
 
@@ -504,22 +514,21 @@ local menuItems = {'Farm', 'Combat', 'Configurações', 'Status'}
 local menuBtns  = {}
 local activeTab = 'Farm'
 
-local function makeSideBtn(name, posY)
+local function makeSideBtn(name)
     local btn = Instance.new('TextButton')
-    btn.Size             = UDim2.new(1, -10, 0, 34)
-    btn.Position         = UDim2.new(0, 5, 0, posY)
+    btn.Size             = UDim2.new(0.9, 0, 0, 34)
     btn.BackgroundColor3 = C.sidebar
     btn.Text             = name
     btn.TextColor3       = C.textDim
-    btn.TextScaled       = true
+    btn.TextSize         = 14
     btn.Font             = Enum.Font.Gotham
     btn.BorderSizePixel  = 0
-    btn.Parent           = sidebar
+    btn.Parent           = SideButtons
     Instance.new('UICorner', btn).CornerRadius = UDim.new(0, 6)
 
     local bar = Instance.new('Frame')
-    bar.Size             = UDim2.new(0, 3, 0.7, 0)
-    bar.Position         = UDim2.new(0, 0, 0.15, 0)
+    bar.Size             = UDim2.new(0, 3, 0.6, 0)
+    bar.Position         = UDim2.new(0, 0, 0.2, 0)
     bar.BackgroundColor3 = C.accent
     bar.BorderSizePixel  = 0
     bar.Visible          = false
@@ -529,11 +538,9 @@ local function makeSideBtn(name, posY)
     return btn, bar
 end
 
-local sideY = 126
 for _, name in ipairs(menuItems) do
-    local btn, bar = makeSideBtn(name, sideY)
+    local btn, bar = makeSideBtn(name)
     menuBtns[name] = {btn=btn, bar=bar}
-    sideY = sideY + 38
 end
 
 -- Título da aba ativa
@@ -555,67 +562,101 @@ HDiv.BackgroundColor3 = C.divider
 HDiv.BorderSizePixel  = 0
 HDiv.Parent           = ContentArea
 
--- Painéis
+-- Painéis com Scrolling e Layout Automático
 local Panels = {}
 local function newPanel(name)
-    local p = Instance.new('Frame')
+    local p = Instance.new('ScrollingFrame')
     p.Name             = name
-    p.Size             = UDim2.new(1, 0, 1, -44)
-    p.Position         = UDim2.new(0, 0, 0, 44)
+    p.Size             = UDim2.new(1, -10, 1, -54)
+    p.Position         = UDim2.new(0, 5, 0, 48)
     p.BackgroundTransparency = 1
+    p.BorderSizePixel  = 0
+    p.ScrollBarThickness = 2
+    p.ScrollBarImageColor3 = C.accent
     p.Visible          = false
     p.Parent           = ContentArea
+    p.CanvasSize       = UDim2.new(0, 0, 0, 0)
+    p.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    
+    local layout = Instance.new("UIListLayout", p)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+    
+    local padding = Instance.new("UIPadding", p)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.PaddingTop = UDim.new(0, 5)
+    padding.PaddingBottom = UDim.new(0, 10)
+
     Panels[name]       = p
     return p
 end
 
--- Helpers de Widget (Reutilizados)
+-- Helpers de Widget (Estilo Switch com Descrição - Igual à Imagem)
 local allToggles = {}
-local function makeRow(parent, posY, label, flag)
+local function makeRow(parent, label, desc, flag)
     local row = Instance.new('Frame')
-    row.Size             = UDim2.new(1, -20, 0, 38)
-    row.Position         = UDim2.new(0, 10, 0, posY)
-    row.BackgroundColor3 = C.btnOff
+    row.Size             = UDim2.new(1, 0, 0, 56) -- Altura fixa para o item
+    row.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
     row.BorderSizePixel  = 0
     row.Parent           = parent
-    Instance.new('UICorner', row).CornerRadius = UDim.new(0, 6)
+    Instance.new('UICorner', row).CornerRadius = UDim.new(0, 8)
 
+    local stroke = Instance.new("UIStroke", row)
+    stroke.Color = Color3.fromRGB(40, 40, 45)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.5
+
+    -- Título da opção
     local lbl = Instance.new('TextLabel')
-    lbl.Size                   = UDim2.new(1, -50, 1, 0)
-    lbl.Position               = UDim2.new(0, 12, 0, 0)
+    lbl.Size                   = UDim2.new(1, -80, 0, 22)
+    lbl.Position               = UDim2.new(0, 14, 0, 10)
     lbl.BackgroundTransparency = 1
     lbl.Text                   = label
     lbl.TextColor3             = C.text
-    lbl.TextScaled             = true
+    lbl.TextSize               = 15
     lbl.Font                   = Enum.Font.GothamBold
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
     lbl.Parent                 = row
 
-    local box = Instance.new('Frame')
-    box.Size             = UDim2.new(0, 22, 0, 22)
-    box.Position         = UDim2.new(1, -32, 0.5, -11)
-    box.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    box.BorderSizePixel  = 0
-    box.Parent           = row
-    Instance.new('UICorner', box).CornerRadius = UDim.new(0, 4)
-    local boxStroke = Instance.new('UIStroke', box)
-    boxStroke.Color     = C.accent
-    boxStroke.Thickness = 1.5
+    -- Descrição (Subtitle)
+    local sub = Instance.new('TextLabel')
+    sub.Size                   = UDim2.new(1, -80, 0, 16)
+    sub.Position               = UDim2.new(0, 14, 0, 30)
+    sub.BackgroundTransparency = 1
+    sub.Text                   = desc
+    sub.TextColor3             = C.textDim
+    sub.TextSize               = 12
+    sub.Font                   = Enum.Font.Gotham
+    sub.TextXAlignment         = Enum.TextXAlignment.Left
+    sub.Parent                 = row
 
-    local check = Instance.new('TextLabel')
-    check.Size                   = UDim2.new(1, 0, 1, 0)
-    check.BackgroundTransparency = 1
-    check.Text                   = ''
-    check.TextColor3             = C.accent2
-    check.TextScaled             = true
-    check.Font                   = Enum.Font.GothamBold
-    check.Parent                 = box
+    -- Switch (Pílula moderna)
+    local switchBg = Instance.new('Frame')
+    switchBg.Size             = UDim2.new(0, 42, 0, 22)
+    switchBg.Position         = UDim2.new(1, -56, 0.5, -11)
+    switchBg.BackgroundColor3 = C.btnOff
+    switchBg.BorderSizePixel  = 0
+    switchBg.Parent           = row
+    Instance.new('UICorner', switchBg).CornerRadius = UDim.new(1, 0)
+
+    local knob = Instance.new('Frame')
+    knob.Size             = UDim2.new(0, 16, 0, 16)
+    knob.Position         = UDim2.new(0, 3, 0.5, -8)
+    knob.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+    knob.BorderSizePixel  = 0
+    knob.Parent           = switchBg
+    Instance.new('UICorner', knob).CornerRadius = UDim.new(1, 0)
 
     local function updateVisuals()
         local s = _G[flag]
-        check.Text             = s and '✓' or ''
-        row.BackgroundColor3   = s and Color3.fromRGB(20, 50, 35) or C.btnOff
-        boxStroke.Color        = s and C.accent2 or C.accent
+        TweenService:Create(switchBg, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundColor3 = s and C.accent or C.btnOff
+        }):Play()
+        TweenService:Create(knob, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = s and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8),
+            BackgroundColor3 = s and Color3.new(1, 1, 1) or Color3.fromRGB(180, 180, 180)
+        }):Play()
     end
 
     if not allToggles[flag] then allToggles[flag] = {} end
@@ -638,14 +679,13 @@ local function makeRow(parent, posY, label, flag)
     return row
 end
 
-local function makeInfoLabel(parent, posY, txt)
+local function makeInfoLabel(parent, txt)
     local lbl = Instance.new('TextLabel')
-    lbl.Size                   = UDim2.new(1, -20, 0, 26)
-    lbl.Position               = UDim2.new(0, 10, 0, posY)
+    lbl.Size                   = UDim2.new(1, 0, 0, 24)
     lbl.BackgroundTransparency = 1
     lbl.Text                   = txt
     lbl.TextColor3             = C.textDim
-    lbl.TextScaled             = true
+    lbl.TextSize               = 13
     lbl.Font                   = Enum.Font.Gotham
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
     lbl.Parent                 = parent
@@ -654,29 +694,31 @@ end
 
 -- ══ PAINEL: FARM ══
 local PFarm = newPanel('Farm')
+
 local FarmBtn = Instance.new('TextButton')
-FarmBtn.Size             = UDim2.new(1, -20, 0, 40)
-FarmBtn.Position         = UDim2.new(0, 10, 0, 10)
-FarmBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 60)
+FarmBtn.Size             = UDim2.new(1, 0, 0, 44)
+FarmBtn.BackgroundColor3 = Color3.fromRGB(35, 160, 70)
 FarmBtn.Text             = '▶   Iniciar Auto Farm'
 FarmBtn.TextColor3       = Color3.fromRGB(255, 255, 255)
-FarmBtn.TextScaled       = true
+FarmBtn.TextSize         = 16
 FarmBtn.Font             = Enum.Font.GothamBold
 FarmBtn.BorderSizePixel  = 0
 FarmBtn.Parent           = PFarm
-Instance.new('UICorner', FarmBtn).CornerRadius = UDim.new(0, 7)
+Instance.new('UICorner', FarmBtn).CornerRadius = UDim.new(0, 8)
+
 local farmStroke = Instance.new('UIStroke', FarmBtn)
-farmStroke.Color     = C.accent2
-farmStroke.Thickness = 1
+farmStroke.Color     = Color3.fromRGB(80, 255, 140)
+farmStroke.Thickness = 1.5
+farmStroke.Transparency = 0.4
 
-makeRow(PFarm, 58,  'Auto Quest',    'AutoQuest')
-makeRow(PFarm, 102, 'Fast Attack',   'FastAttack')
-makeRow(PFarm, 146, 'Auto Click',    'AutoClick')
+makeRow(PFarm, 'Auto Quest',    'Completa missões automaticamente', 'AutoQuest')
+makeRow(PFarm, 'Fast Attack',   'Aumenta a velocidade de ataque',   'FastAttack')
+makeRow(PFarm, 'Auto Click',    'Clica automaticamente nos inimigos', 'AutoClick')
 
-local farmInfoLvl = makeInfoLabel(PFarm, 192, '📊 Level: --')
-local farmInfoMob = makeInfoLabel(PFarm, 216, '⚔  Mob: --')
-local farmInfoSea = makeInfoLabel(PFarm, 240, '🌊 Sea: --')
-local farmInfoSts = makeInfoLabel(PFarm, 264, '⚙  Status: Parado')
+local farmInfoLvl = makeInfoLabel(PFarm, '📊 Level: --')
+local farmInfoMob = makeInfoLabel(PFarm, '⚔  Mob: --')
+local farmInfoSea = makeInfoLabel(PFarm, '🌊 Sea: --')
+local farmInfoSts = makeInfoLabel(PFarm, '⚙  Status: Parado')
 
 FarmBtn.MouseButton1Click:Connect(function()
     _G.AutoFarm = not _G.AutoFarm
@@ -688,24 +730,24 @@ FarmBtn.MouseButton1Click:Connect(function()
                 for _, func in ipairs(allToggles[flag]) do pcall(func) end
             end
         end
-        FarmBtn.BackgroundColor3 = Color3.fromRGB(160, 35, 35)
+        FarmBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
         FarmBtn.Text             = '⏹   Parar Auto Farm'
-        farmStroke.Color         = Color3.fromRGB(255, 80, 80)
+        farmStroke.Color         = Color3.fromRGB(255, 100, 100)
         task.spawn(farmLoop)
     else
-        FarmBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 60)
+        FarmBtn.BackgroundColor3 = Color3.fromRGB(35, 160, 70)
         FarmBtn.Text             = '▶   Iniciar Auto Farm'
-        farmStroke.Color         = C.accent2
+        farmStroke.Color         = Color3.fromRGB(80, 255, 140)
         stopEverything()
     end
 end)
 
 -- ══ PAINEL: COMBAT ══
 local PCombat = newPanel('Combat')
-makeRow(PCombat, 10,  'Auto Combat (Skills Z X C V)', 'AutoCombat')
-makeRow(PCombat, 54,  'Auto Click em Mobs',           'AutoClick')
-makeRow(PCombat, 98,  'Fast Attack',                  'FastAttack')
-makeInfoLabel(PCombat, 148, '⚠ Auto Combat funciona sozinho ou junto com o Farm.')
+makeRow(PCombat, 'Auto Combat',     'Usa as habilidades Z X C V', 'AutoCombat')
+makeRow(PCombat, 'Auto Click Mobs', 'Clica nos mobs próximos',      'AutoClick')
+makeRow(PCombat, 'Fast Attack',    'Ataques rápidos ativados',     'FastAttack')
+makeInfoLabel(PCombat, '⚠ Auto Combat funciona sozinho ou junto com o Farm.')
 
 -- ══ PAINEL: CONFIGURAÇÕES ══
 local PConfig = newPanel('Configurações')
@@ -717,20 +759,20 @@ local cfgLines = {
     '🗡  Auto Combat com Skills Z X C V',
     '⚡  Fast Attack reduz delay de ataque',
 }
-for i, line in ipairs(cfgLines) do
-    makeInfoLabel(PConfig, 4 + i * 26, line)
+for _, line in ipairs(cfgLines) do
+    makeInfoLabel(PConfig, line)
 end
 
 -- ══ PAINEL: STATUS ══
 local PStatus = newPanel('Status')
-local stLvl  = makeInfoLabel(PStatus, 10,  '📊 Level: --')
-local stMob  = makeInfoLabel(PStatus, 36,  '⚔  Mob Atual: --')
-local stSea  = makeInfoLabel(PStatus, 62,  '🌊 Sea: --')
-local stSts  = makeInfoLabel(PStatus, 88,  '⚙  Status: Parado')
-local stFarm = makeInfoLabel(PStatus, 114, '🌿 Auto Farm: OFF')
-local stCbt  = makeInfoLabel(PStatus, 140, '🗡  Auto Combat: OFF')
-local stClk  = makeInfoLabel(PStatus, 166, '🖱  Auto Click: OFF')
-local stFast = makeInfoLabel(PStatus, 192, '⚡  Fast Attack: OFF')
+local stLvl  = makeInfoLabel(PStatus, '📊 Level: --')
+local stMob  = makeInfoLabel(PStatus, '⚔  Mob Atual: --')
+local stSea  = makeInfoLabel(PStatus, '🌊 Sea: --')
+local stSts  = makeInfoLabel(PStatus, '⚙  Status: Parado')
+local stFarm = makeInfoLabel(PStatus, '🌿 Auto Farm: OFF')
+local stCbt  = makeInfoLabel(PStatus, '🗡  Auto Combat: OFF')
+local stClk  = makeInfoLabel(PStatus, '🖱  Auto Click: OFF')
+local stFast = makeInfoLabel(PStatus, '⚡  Fast Attack: OFF')
 
 -- ══ TROCA DE ABAS ══
 local function switchTab(name)
