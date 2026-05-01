@@ -270,6 +270,14 @@ local function attackMob(mob)
     
     equipTool()
     
+    -- Garante Auto Click ao atacar (conforme pedido do usuário)
+    if _G.AutoFarm and not _G.AutoClick then
+        _G.AutoClick = true
+        if allToggles["AutoClick"] then
+            for _, func in ipairs(allToggles["AutoClick"]) do pcall(func) end
+        end
+    end
+    
     -- Ajustado para 8 studs de altura (altura ideal para hitboxes de Blox Fruits)
     tp(CFrame.new(mhrp.Position + Vector3.new(0, 8, 0)))
     
@@ -790,18 +798,24 @@ end
 switchTab('Farm')
 
 -- ABRIR / FECHAR
-openBtn.MouseButton1Click:Connect(function()
-    main.Visible = true
-    shadow.Visible = true
-    openBtn.Visible = false
-    shadowBtn.Visible = false
-end)
+local function toggleUI()
+    main.Visible = not main.Visible
+    shadow.Visible = main.Visible
+end
+
+openBtn.MouseButton1Click:Connect(toggleUI)
 
 closeBtn.MouseButton1Click:Connect(function()
     main.Visible = false
     shadow.Visible = false
-    openBtn.Visible = true
-    shadowBtn.Visible = true
+end)
+
+-- ATALHO (CONTROL) E BOTÃO SEMPRE VISÍVEL
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.LeftControl then
+        toggleUI()
+    end
 end)
 
 -- DRAG NA JANELA
