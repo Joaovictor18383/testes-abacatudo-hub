@@ -18,6 +18,15 @@ local HRP    = Char:WaitForChild('HumanoidRootPart')
 local Hum    = Char:WaitForChild('Humanoid')
 local CommF_ = RS:WaitForChild('Remotes'):WaitForChild('CommF_')
 
+-- ══ FUNÇÕES DE UTILIDADE ══
+local function isAlive()
+    return Hum and Hum.Health > 0 and Char:FindFirstChild("HumanoidRootPart")
+end
+
+local function getLevel()
+    return LP.Data.Level.Value
+end
+
 -- ══ FLAGS ══
 _G.AutoFarm   = false
 _G.AutoCombat = false
@@ -835,29 +844,6 @@ local function useSkills()
     end
 end
 
--- Fast Attack / Auto Click Logic
--- Ataca mob: fica EM CIMA e usa skills/click
-local function attackMob(mob)
-    if not mob then return end
-    local mhrp = mob:FindFirstChild('HumanoidRootPart')
-    if not mhrp then return end
-    
-    equipTool()
-    
-    -- Ajustado para 8 studs de altura para garantir hitreg
-    tp(CFrame.new(mhrp.Position + Vector3.new(0, 8, 0)))
-    
-    if _G.AutoCombat then 
-        for _, k in ipairs({Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}) do
-            pcall(function()
-                VIM:SendKeyEvent(true,  k, false, game)
-                task.wait(0.01)
-                VIM:SendKeyEvent(false, k, false, game)
-            end)
-        end
-    end
-end
-
 -- Transição Sea 2
 local function checkSea()
     if getLevel() >= 700 and game.PlaceId ~= 4442272183 then
@@ -881,11 +867,14 @@ local function farmLoop()
     while _G.AutoFarm do
         task.wait(0.15) -- Delay para garantir que a UI tenha tempo de processar cliques
         
-        if not (LP.Character and LP.Character:FindFirstChild("Humanoid") and LP.Character.Humanoid.Health > 0) then
+        if not isAlive() then
             if float.Parent then float.Parent = nil end
             task.wait(3)
             continue
         end
+
+        -- Verifica se precisa ir para o Sea 2
+        checkSea()
 
         -- Mantém a suspensão no HRP
         if HRP and float.Parent ~= HRP then
@@ -1518,10 +1507,9 @@ task.spawn(function()
         task.wait(1)
         pcall(function()
             local lvl  = getLevel()
-            local q    = getQuestEntry()
-            local mob  = q and q.mob or '--'
+            local mob  = Mon or '--'
             local sea  = lvl >= 700 and 'Sea 2' or 'Sea 1'
-            local sts  = _G.AutoFarm and ('Farmando Lv '..lvl) or statusText
+            local sts  = _G.AutoFarm and ('Farmando: ' .. (Mon or "...")) or statusText
 
             farmInfoLvl.Text = '📊 Level: ' .. lvl
             farmInfoMob.Text = '⚔  Mob: '   .. mob
